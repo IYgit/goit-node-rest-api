@@ -1,5 +1,4 @@
 import contactsService from "../services/contactsServices.js";
-import { contactSchema, updateContactSchema } from "../schemas/contactsSchemas.js";
 
 // GET /api/contacts
 export const getAllContacts = async (req, res) => {
@@ -40,12 +39,8 @@ export const deleteContact = async (req, res) => {
 
 export const createContact = async (req, res) => {
   try {
-    const { error } = contactSchema.validate(req.body);
-    if (error) {
-      return res.status(400).json({ message: error.message });
-    }
     const { name, email, phone } = req.body;
-    const newContact = await contactsService.addContact({ name, email, phone });
+    const newContact = await contactsService.addContact(name, email, phone);
     res.status(201).json(newContact);
   } catch (error) {
     res.status(500).json({ message: "Server error" });
@@ -57,12 +52,6 @@ export const updateContact = async (req, res) => {
     // Якщо body порожній або не містить жодного з полів
     if (!req.body || Object.keys(req.body).length === 0) {
       return res.status(400).json({ message: "Body must have at least one field" });
-    }
-
-    // Валідація body
-    const { error } = updateContactSchema.validate(req.body);
-    if (error) {
-      return res.status(400).json({ message: error.message });
     }
 
     const { id } = req.params;
