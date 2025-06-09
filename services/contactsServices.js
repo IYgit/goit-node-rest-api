@@ -7,7 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Формуємо правильний шлях до db/contacts.json від кореня проекту
-const contactsPath = path.join(__dirname, '..', 'dbc', 'contacts.json');
+const contactsPath = path.join(__dirname, '..', 'db', 'contacts.json');
 
 async function listContacts() {
     const data = await fs.readFile(contactsPath, 'utf-8');
