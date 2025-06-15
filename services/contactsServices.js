@@ -1,6 +1,8 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import "../db/sequelize.js"
+import Contact from '../models/contact.js';
 
 // Додаємо ці рядки для отримання __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -10,40 +12,50 @@ const __dirname = path.dirname(__filename);
 const contactsPath = path.join(__dirname, '..', 'db', 'contacts.json');
 
 async function listContacts() {
-    const data = await fs.readFile(contactsPath, 'utf-8');
-    return JSON.parse(data);
+    return await Contact.findAll();
 }
 
 async function getContactById(contactId) {
-    const contacts = await listContacts();
-    return contacts.find(contact => contact.id === contactId) || null;
+    return await Contact.findByPk(contactId);
 }
 
 async function removeContact(contactId) {
-    const contacts = await listContacts();
-    const updatedContacts = contacts.filter(contact => contact.id !== contactId);
-    await fs.writeFile(contactsPath, JSON.stringify(updatedContacts, null, 2));
-    return contacts.find(contact => contact.id === contactId) || null;
+    const contact = await Contact.findByPk(contactId);
+    if (!contact) return null;
+    await contact.destroy();
+    return contact;
 }
 
 async function addContact(name, email, phone) {
-    const contacts = await listContacts();
-    const newContact = { id: Date.now().toString(), name, email, phone };
-    contacts.push(newContact);
-    await fs.writeFile(contactsPath, JSON.stringify(contacts, null, 2));
-    return newContact;
+    return await Contact.create({ name, email, phone });
 }
 
 async function updateContact(contactId, body) {
-    const contacts = await listContacts();
-    const idx = contacts.findIndex(contact => contact.id === contactId);
-    if (idx === -1) {
-        return null;
-    }
-    // Оновлюємо лише передані поля
-    contacts[idx] = { ...contacts[idx], ...body };
-    await fs.writeFile(contactsPath, JSON.stringify(contacts, null, 2));
-    return contacts[idx];
+    const [updated] = await Contact.update(body, {
+        where: { id: contactId },
+        returning: true
+    });
+    if (!updated) return null;
+    return await Contact.findByPk(contactId);
 }
 
-export default { listContacts, getContactById, removeContact, addContact, updateContact };
+async function updateStatusContact(contactId, body) {
+    const [updated] = await Contact.update(
+        { favorite: body.favorite },
+        {
+            where: { id: contactId },
+            returning: true
+        }
+    );
+    if (!updated) return null;
+    return await Contact.findByPk(contactId);
+}
+
+export default { 
+    listContacts, 
+    getContactById, 
+    removeContact, 
+    addContact, 
+    updateContact,
+    updateStatusContact 
+};

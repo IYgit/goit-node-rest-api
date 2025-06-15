@@ -66,3 +66,16 @@ export const updateContact = async (req, res, next) => {
     next(error);
   }
 };
+
+export const updateStatusContact = async (req, res, next) => {
+    try {
+        const { contactId } = req.params;
+        const updatedContact = await contactsService.updateStatusContact(contactId, req.body);
+        if (!updatedContact) {
+            return res.status(404).json({ message: "Not found" });
+        }
+        res.status(200).json(updatedContact);
+    } catch (error) {
+        next(error);
+    }
+};
