@@ -2,8 +2,9 @@
   "name": "goit-node-rest-api",
   "type": "module",
   "scripts": {
-    "start": "node ./app.js",
-    "dev": "nodemon ./app.js"
+    "start": "set NODE_ENV=production&& node ./app.js",
+    "dev": "set NODE_ENV=development&& nodemon ./app.js",
+    "test": "set NODE_ENV=test&& node ./app.js"
   },
   "dependencies": {
     "cors": "^2.8.5",

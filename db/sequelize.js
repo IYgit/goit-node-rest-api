@@ -1,5 +1,9 @@
-import {Sequelize} from "sequelize";
+import { Sequelize } from "sequelize";
+import dotenv from 'dotenv';
 
+// Завантажуємо відповідний .env файл
+const environment = process.env.NODE_ENV || 'development';
+dotenv.config({ path: `.env.${environment}` });
 
 const sequelize = new Sequelize({
     dialect: process.env.DATABASE_DIALECT,
