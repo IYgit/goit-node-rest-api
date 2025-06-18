@@ -1,15 +1,5 @@
-import fs from 'fs/promises';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import "../db/sequelize.js"
 import Contact from '../models/contact.js';
-
-// Додаємо ці рядки для отримання __dirname
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Формуємо правильний шлях до db/contacts.json від кореня проекту
-const contactsPath = path.join(__dirname, '..', 'db', 'contacts.json');
 
 async function listContacts() {
     return await Contact.findAll();
