@@ -9,8 +9,12 @@ import {
 } from "../controllers/contactsControllers.js";
 import validateBody from "../helpers/validateBody.js";
 import { contactSchema, updateContactSchema, updateFavoriteSchema } from "../schemas/contactsSchemas.js";
+import authenticate from '../middleware/authenticate.js'; // Import the authentication middleware
 
 const router = express.Router();
+
+// Apply authenticate middleware to all contact routes
+router.use(authenticate);
 
 router.get("/", getAllContacts);
 router.get("/:id", getOneContact);

@@ -1,0 +1,56 @@
+const path = require('path');
+const nodeFs = require('fs');
+
+const env = process.env.NODE_ENV || 'development';
+const dotenvPath = path.resolve(process.cwd(), `.env.${env}`);
+
+if (nodeFs.existsSync(dotenvPath)) {
+  require('dotenv').config({ path: dotenvPath });
+  console.log(`Loaded environment variables from ${dotenvPath}`);
+} else {
+  console.warn(`Warning: ${dotenvPath} not found. Using default database credentials for URL construction if components are missing.`);
+}
+
+// --- Apply defaults if not found in process.env after dotenv attempt ---
+const dbUser = process.env.DATABASE_USERNAME || 'postgres'; // Common default
+const dbPass = process.env.DATABASE_PASSWORD || 'password'; // Common default, or empty ''
+const dbHost = process.env.DATABASE_HOST || 'localhost';
+const dbPort = process.env.DATABASE_PORT || 5432;
+let dbName = process.env.DATABASE_NAME;
+let dbNameTest = process.env.DATABASE_NAME_TEST;
+
+if (env === 'development' || env === 'production') {
+    dbName = dbName || 'contacts_api_dev'; // Default DB name for dev/prod
+}
+if (env === 'test') {
+    dbNameTest = dbNameTest || 'contacts_api_test'; // Default DB name for test
+}
+// --- End of defaults ---
+
+// Construct DATABASE_URL if not set
+if (!process.env.DATABASE_URL && (env === 'development' || env === 'production')) {
+  if (dbUser && dbHost && dbName) {
+    process.env.DATABASE_URL = `postgresql://${encodeURIComponent(dbUser)}${dbPass ? `:${encodeURIComponent(dbPass)}` : ''}@${dbHost}:${dbPort}/${encodeURIComponent(dbName)}`;
+    console.log(`Constructed DATABASE_URL for ${env} using components (some might be defaults): ${process.env.DATABASE_URL.replace(/:[^:]*@/, ':********@')}`);
+  } else {
+    // This case should ideally not be hit if defaults are applied
+    console.error(`FATAL: Could not construct DATABASE_URL for ${env}. Critical components missing and defaults failed.`);
+  }
+}
+
+// Construct DATABASE_URL_TEST for test environment
+if (!process.env.DATABASE_URL_TEST && env === 'test') {
+  if (dbUser && dbHost && dbNameTest) {
+    process.env.DATABASE_URL_TEST = `postgresql://${encodeURIComponent(dbUser)}${dbPass ? `:${encodeURIComponent(dbPass)}` : ''}@${dbHost}:${dbPort}/${encodeURIComponent(dbNameTest)}`;
+    console.log(`Constructed DATABASE_URL_TEST for test using components (some might be defaults): ${process.env.DATABASE_URL_TEST.replace(/:[^:]*@/, ':********@')}`);
+  } else {
+    console.error('FATAL: Could not construct DATABASE_URL_TEST. Critical components missing and defaults failed.');
+  }
+}
+
+module.exports = {
+  'config': path.resolve(process.cwd(), 'config', 'config.json'),
+  'models-path': path.resolve(process.cwd(), 'models'),
+  'migrations-path': path.resolve(process.cwd(), 'migrations'),
+  'seeders-path': path.resolve(process.cwd(), 'seeders')
+};

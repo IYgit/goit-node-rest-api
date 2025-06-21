@@ -19,9 +19,24 @@ const Contact = sequelize.define('contact', {
   favorite: {
     type: DataTypes.BOOLEAN,
     defaultValue: false
-  }
+  },
+  owner: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: 'users', // Name of the target table
+      key: 'id',      // Name of the target column
+    },
+  },
 }, {
   timestamps: false // відключаємо автоматичне управління timestamps
 });
+
+Contact.associate = function(models) {
+  Contact.belongsTo(models.User, {
+    foreignKey: 'owner',
+    as: 'user',
+  });
+};
 
 export default Contact;
