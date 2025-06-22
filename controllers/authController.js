@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs';
-import models from '../models/index.js'; // models/index.js is CJS, this should get the module.exports object
+import modelsFile from '../models/index.js'; // Import the module file
+const models = modelsFile.default; // Access the actual exports via .default
 const { User } = models; // User should be a property on the exported object
 import HttpError from '../helpers/HttpError.js';
 import jwt from 'jsonwebtoken'; // Moved import here

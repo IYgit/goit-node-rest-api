@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
-import models from '../models/index.js'; // Using the same import pattern as authController
+import modelsFile from '../models/index.js'; // Import the module file
+const models = modelsFile.default; // Access the actual exports via .default
 const { User } = models;
 import HttpError from '../helpers/HttpError.js';
 
