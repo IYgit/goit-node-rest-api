@@ -1,5 +1,6 @@
-const { DataTypes } = require('sequelize');
-const sequelize = require('../db/sequelize');
+import sequelize from '../db/sequelize.js';
+import { DataTypes } from 'sequelize';
+
 
 const User = sequelize.define('User', {
   password: {
@@ -22,7 +23,9 @@ const User = sequelize.define('User', {
   },
 }, {
   tableName: 'users',
+  timestamps: false, // ✅ Вимикає createdAt та updatedAt
 });
+
 
 User.associate = function(models) {
   User.hasMany(models.Contact, {
@@ -30,5 +33,8 @@ User.associate = function(models) {
     as: 'contacts',
   });
 };
+
+// await sequelize.sync({ force: true });
+
 
 export default User;

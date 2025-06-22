@@ -32,4 +32,13 @@ const Contact = sequelize.define('contact', {
   timestamps: false // відключаємо автоматичне управління timestamps
 });
 
+Contact.associate = function(models) {
+  Contact.belongsTo(models.User, {
+    foreignKey: 'owner',
+    as: 'user',
+  });
+};
+
+// await sequelize.sync({ force: true });
+
 export default Contact;
