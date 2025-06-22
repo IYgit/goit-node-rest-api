@@ -3,7 +3,7 @@ import contactsService from "../services/contactsServices.js";
 // GET /api/contacts
 export const getAllContacts = async (req, res, next) => {
   try {
-    const contacts = await contactsService.listContacts();
+    const contacts = await contactsService.listContacts(req.user.id);
     res.status(200).json(contacts);
   } catch (error) {
     next(error);
@@ -40,7 +40,8 @@ export const deleteContact = async (req, res, next) => {
 export const createContact = async (req, res, next) => {
   try {
     const { name, email, phone } = req.body;
-    const newContact = await contactsService.addContact(name, email, phone);
+    const owner = req.user.id; // Отримуємо ID користувача з req.user
+    const newContact = await contactsService.addContact(name, email, phone, owner);
     res.status(201).json(newContact);
   } catch (error) {
     next(error);
@@ -49,13 +50,14 @@ export const createContact = async (req, res, next) => {
 
 export const updateContact = async (req, res, next) => {
   try {
-    // Якщо body порожній або не містить жодного з полів
     if (!req.body || Object.keys(req.body).length === 0) {
       return res.status(400).json({ message: "Body must have at least one field" });
     }
 
     const { id } = req.params;
-    const updatedContact = await contactsService.updateContact(id, req.body);
+    const userId = req.user.id;
+
+    const updatedContact = await contactsService.updateContact(id, req.body, userId);
 
     if (!updatedContact) {
       return res.status(404).json({ message: "Not found" });

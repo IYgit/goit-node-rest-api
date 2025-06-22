@@ -9,7 +9,7 @@ const authRouter = express.Router();
 // User registration
 authRouter.post('/register', validateBody(registerSchema), authController.register);
 
-// User login (controller to be fully implemented later)
+// User login
 authRouter.post('/login', validateBody(loginSchema), authController.login);
 
 // User logout
