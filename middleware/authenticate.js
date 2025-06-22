@@ -1,7 +1,6 @@
 import jwt from 'jsonwebtoken';
-import modelsFile from '../models/index.js'; // Import the module file
-const models = modelsFile.default; // Access the actual exports via .default
-const { User } = models;
+import models from '../models/index.cjs'; // Changed to .cjs, direct import
+const { User } = models; // 'models' is now the module.exports object
 import HttpError from '../helpers/HttpError.js';
 
 const authenticate = async (req, res, next) => {

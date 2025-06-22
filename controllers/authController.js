@@ -1,9 +1,8 @@
 import bcrypt from 'bcryptjs';
-import modelsFile from '../models/index.js'; // Import the module file
-const models = modelsFile.default; // Access the actual exports via .default
-const { User } = models; // User should be a property on the exported object
+import models from '../models/index.cjs'; // Changed to .cjs, direct import
+const { User } = models; // 'models' is now the module.exports object
 import HttpError from '../helpers/HttpError.js';
-import jwt from 'jsonwebtoken'; // Moved import here
+import jwt from 'jsonwebtoken';
 
 export const register = async (req, res, next) => {
   try {

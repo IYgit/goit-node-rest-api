@@ -1,8 +1,8 @@
 'use strict';
 
 const sequelize = require('../db/sequelize'); // Use the existing sequelize instance
-const User = require('./user');
-const Contact = require('./contact').default; // Handle ES module default export
+const User = require('./user.cjs'); // Updated to .cjs
+const Contact = require('./contact.js').default; // Assuming contact.js remains ESM .js file
 
 const db = {
   sequelize,
