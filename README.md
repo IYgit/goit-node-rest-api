@@ -222,5 +222,6 @@ ResponseBody: {
   "message": "Not authorized"
 }
 ```
-
+## Результат виконання роботи
 ![Contacts API](./assets/screen_1.png)
+![Contacts API](./assets/screen_2.png)
