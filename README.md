@@ -222,6 +222,20 @@ ResponseBody: {
   "message": "Not authorized"
 }
 ```
-## Результат виконання роботи
-![Contacts API](./assets/screen_1.png)
-![Contacts API](./assets/screen_2.png)
+## Результати виконання роботи
+### Login
+![Contacts API](assets/login.png)
+### Get contact
+![Contacts API](assets/get_contact.png)
+### Get all contacts
+![Contacts API](assets/get_all_contacts.png)
+### Create contact
+![Contacts API](./assets/create_contact.png)
+### Update contact
+![Contacts API](./assets/update_contact.png)
+### Update status
+![Contacts API](./assets/update_status.png)
+### Delete contact
+![Contacts API](./assets/delete_contact.png)
+### Logout
+![Contacts API](./assets/logout.png)
