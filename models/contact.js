@@ -38,6 +38,6 @@ Contact.associate = function(models) {
   });
 };
 
-await sequelize.sync({ alter: true });
+// await sequelize.sync({ force: true });
 
 export default Contact;
