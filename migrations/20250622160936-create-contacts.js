@@ -1,11 +1,13 @@
+'use strict';
+
+/** @type {import('sequelize-cli').Migration} */
 module.exports = {
-  up: async (queryInterface, Sequelize) => {
+  async up(queryInterface, Sequelize) {
     await queryInterface.createTable('contacts', {
       id: {
-        allowNull: false,
-        primaryKey: true,
-        type: Sequelize.UUID
-        // defaultValue will be handled by the database
+        type: Sequelize.UUID,
+        defaultValue: Sequelize.UUIDV4,
+        primaryKey: true
       },
       name: {
         type: Sequelize.STRING(100),
@@ -23,11 +25,21 @@ module.exports = {
       favorite: {
         type: Sequelize.BOOLEAN,
         defaultValue: false
+      },
+      owner: {
+        type: Sequelize.UUID,
+        allowNull: false,
+        references: {
+          model: 'users',
+          key: 'id'
+        },
+        onDelete: 'CASCADE',
+        onUpdate: 'CASCADE'
       }
     });
   },
 
-  down: async (queryInterface, Sequelize) => {
+  async down(queryInterface, Sequelize) {
     await queryInterface.dropTable('contacts');
   }
 };
