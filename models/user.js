@@ -38,7 +38,7 @@ User.associate = function(models) {
   });
 };
 
-await sequelize.sync({ alter: true });
+// await sequelize.sync({ alter: true });
 
 
 export default User;

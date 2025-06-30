@@ -1,8 +1,9 @@
 import express from 'express';
 import * as authController from '../controllers/authController.js';
 import validateBody from '../helpers/validateBody.js';
-import { registerSchema, loginSchema } from '../schemas/authSchemas.js'; // loginSchema for future use
-import authenticate from '../middleware/authenticate.js'; // Moved import to top
+import { registerSchema, loginSchema } from '../schemas/authSchemas.js';
+import authenticate from '../middleware/authenticate.js';
+import upload from '../middleware/upload.js';
 
 const authRouter = express.Router();
 
@@ -18,5 +19,9 @@ authRouter.post('/logout', authenticate, authController.logout);
 
 // Get current user
 authRouter.get('/current', authenticate, authController.getCurrentUser);
+
+// Оновлення аватара
+// 'avatar'— це назва поля у формі multipart/form-data, з якого Multer очікує отримати файл.
+authRouter.patch('/avatars',  authenticate, upload.single('avatar'), authController.updateAvatar);
 
 export default authRouter;

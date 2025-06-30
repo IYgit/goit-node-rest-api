@@ -3,6 +3,13 @@ import gravatar from 'gravatar';
 import User from '../models/user.js';
 import HttpError from '../helpers/HttpError.js';
 import jwt from 'jsonwebtoken';
+import fs from 'fs/promises';
+import path from 'path';
+import {fileURLToPath} from "url";
+
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export const register = async (req, res, next) => {
   try {
@@ -128,3 +135,50 @@ export const login = async (req, res, next) => {
     next(error);
   }
 };
+
+export const updateAvatar = async (req, res, next) => {
+  try {
+    /* 1. Перевірка наявності файла */
+    if (!req.file) {
+      throw HttpError(400, "Avatar file is required");
+    }
+
+    /* 2. Змінні: user.id та дані про файл */
+    const { id } = req.user;                           // id поточного користувача (приходить із токена)
+    const { path: tempUpload, originalname } = req.file; // шлях тимчасового файлу та оригінальне ім'я
+
+    /* 3. Шляхи до каталогів */
+    const publicDir  = path.join(__dirname, '../public');
+    const avatarsDir = path.join(publicDir, 'avatars'); // …/public/avatars
+
+    /* 4. Генеруємо унікальне ім’я файлу */
+    const extension  = originalname.split('.').pop();   // png / jpg / …
+    const filename   = `${id}_${Date.now()}.${extension}`;
+
+    /* 5. Остаточний шлях, куди перемістимо файл */
+    const resultUpload = path.join(avatarsDir, filename);
+
+    /* 6. Переміщення (rename == move) файлу з tmp‑папки */
+    await fs.rename(tempUpload, resultUpload);
+
+    /* 7. Новий URL, що зберігатиметься в базі та віддаватиметься клієнту */
+    const avatarURL = `/avatars/${filename}`;
+
+    /* 8. Оновлення запису користувача (Sequelize) */
+    await User.update(
+        { avatarURL },
+        { where: { id } }
+    );
+
+    /* 9. Відповідь клієнту */
+    res.json({ avatarURL });
+  } catch (error) {
+    /* 10. Rollback: видаляємо тимчасовий файл, якщо він ще лежить у tmp‑директорії */
+    if (req.file) {
+      await fs.unlink(req.file.path).catch(console.error);
+    }
+    next(error); // передаємо помилку глобальному error‑handler’у
+  }
+};
+
+

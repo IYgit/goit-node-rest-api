@@ -4,6 +4,7 @@ import cors from "cors";
 import "dotenv/config";
 import path from "path";
 import { fileURLToPath } from 'url';
+import fs from 'fs/promises';
 
 import contactsRouter from "./routes/contactsRouter.js";
 import authRouter from './routes/authRouter.js';
@@ -13,6 +14,18 @@ const app = express();
 // Налаштування шляхів для ES модулів
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Створення необхідних директорій
+const createFolders = async () => {
+  try {
+    await fs.mkdir(path.join(__dirname, 'temp'), { recursive: true });
+    await fs.mkdir(path.join(__dirname, 'public', 'avatars'), { recursive: true });
+  } catch (error) {
+    console.error('Error creating folders:', error);
+  }
+};
+
+createFolders();
 
 app.use(morgan("tiny"));
 app.use(cors());
