@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs';
-import User from '../models/user.js'; // Changed to .cjs, direct import
+import gravatar from 'gravatar';
+import User from '../models/user.js';
 import HttpError from '../helpers/HttpError.js';
 import jwt from 'jsonwebtoken';
 
@@ -7,19 +8,27 @@ export const register = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
-    // Check if user already exists
+    // Перевіряємо чи користувач вже існує
     const existingUser = await User.findOne({ where: { email } });
     if (existingUser) {
       throw HttpError(409, 'Email in use');
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10); // Salt rounds = 10
+    // Генеруємо URL аватара
+    const avatarURL = gravatar.url(email, {
+      s: '250', // Розмір
+      r: 'g',   // Рейтинг
+      d: 'mp'   // Стандартне зображення
+    }, true);   // https
 
-    // Create new user
+    // Хешуємо пароль
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Створюємо нового користувача
     const newUser = await User.create({
       email,
       password: hashedPassword,
+      avatarURL,
       // subscription defaults to 'starter' as per model definition
     });
 
@@ -27,18 +36,17 @@ export const register = async (req, res, next) => {
       user: {
         email: newUser.email,
         subscription: newUser.subscription,
+        avatarURL: newUser.avatarURL,
       },
     });
   } catch (error) {
     // If it's not an HttpError, it might be a Sequelize validation error or other unexpected error
     if (!error.status) {
-        // Log the error for debugging if it's unexpected
-        console.error("Registration Error:", error);
-        // Check for SequelizeUniqueConstraintError specifically
-        if (error.name === 'SequelizeUniqueConstraintError') {
-            return next(HttpError(409, 'Email in use'));
-        }
-        return next(HttpError(500, "Internal Server Error"));
+      console.error("Registration Error:", error);
+      if (error.name === 'SequelizeUniqueConstraintError') {
+        return next(HttpError(409, 'Email in use'));
+      }
+      return next(HttpError(500, "Internal Server Error"));
     }
     next(error);
   }
@@ -61,18 +69,15 @@ export const logout = async (req, res, next) => {
 };
 
 export const getCurrentUser = async (req, res, next) => {
-  // req.user is populated by the authenticate middleware
-  // It contains the full user object including email and subscription
   try {
-    const { email, subscription } = req.user;
-    res.status(200).json({ email, subscription });
+    const { email, subscription, avatarURL } = req.user;
+    res.status(200).json({ email, subscription, avatarURL });
   } catch (error) {
-    // This catch block might be redundant if req.user is guaranteed by middleware,
-    // but good for safety if middleware somehow passes without user or req.user is malformed.
     console.error("GetCurrentUser Error:", error);
     next(HttpError(500, "Internal Server Error"));
   }
 };
+
 
 // Login controller
 export const login = async (req, res, next) => {
@@ -112,6 +117,7 @@ export const login = async (req, res, next) => {
       user: {
         email: user.email,
         subscription: user.subscription,
+        avatarURL: user.avatarURL,
       },
     });
   } catch (error) {
