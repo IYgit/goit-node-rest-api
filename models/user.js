@@ -21,6 +21,10 @@ const User = sequelize.define('User', {
     type: DataTypes.STRING,
     defaultValue: null,
   },
+  avatarURL: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  }
 }, {
   tableName: 'users',
   timestamps: false, // ✅ Вимикає createdAt та updatedAt

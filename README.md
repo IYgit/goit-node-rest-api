@@ -1,241 +1,66 @@
-# Домашнє завдання. Тема 7. Аутентифікація та авторизація
+## Робота з файлами та тестування додатків
+ Додай можливість завантаження аватарки користувача через [Multer].
 
-Створи гілку `04-auth` з гілки `master`.
+### Крок 1
 
-Продовж створення REST API для роботи з колекцією контактів. Додай логіку аутентифікації / авторизації користувача через JWT.
+Створи папку public для роздачі статики. У цій папці зроби папку avatars.
+Налаштуй Express на роздачу статичних файлів з папки public.
+Поклади будь-яке зображення в папку public/avatars і перевір, що роздача статики працює.
+При переході по такому URL браузер відобразить зображення. Shell http://locahost:<порт>/avatars/<ім'я файлу з розширенням>
 
----
+### Крок 2
 
-## Крок 1
-
-1. Створити модель користувача для таблиці `users`:
-
-```js
+У схему користувача додай нову властивість avatarURL для зберігання зображення.
+```
 {
-  password: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  email: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    unique: true,
-  },
-  subscription: {
-    type: DataTypes.ENUM,
-    values: ["starter", "pro", "business"],
-    defaultValue: "starter"
-  },
-  token: {
-    type: DataTypes.STRING,
-    defaultValue: null,
-  },
+...
+avatarURL: DataTypes.STRING,
+...
 }
 ```
 
-2. Змінити модель контактів, щоб кожен користувач бачив тільки свої контакти. Для цього в модель контактів додати властивість
-```js
-   owner: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-    }
-```
-## Крок 2
-### Реєстрація
+Використовуй пакет gravatar для того, щоб при реєстрації нового користувача відразу згенерувати йому аватар по його email.
 
-1. Створити ендпоінт /api/auth/register
-2. Зробити валідацію всіх обов'язкових полів (email і password). При помилці валідації повернути Помилку валідації.
+### Крок 3
 
-У разі успішної валідації в моделі User створити користувача за даними, які пройшли валідацію. Для хешування паролів використовуй bcrypt або bcryptjs
+При реєстрації користувача:
 
-Якщо пошта вже використовується кимось іншим, повернути Помилку Conflict.
-В іншому випадку повернути Успішна відповідь.
+Створюй посилання на аватарку користувача за допомогою gravatar
+Отриманий URL збережи в поле avatarURL під час створення користувача
 
-### Registration request
-```js
-POST /api/auth/register
-Content-Type: application/json
-RequestBody: {
-  "email": "example@example.com",
-  "password": "examplepassword"
-}
+### Крок 4
 
-```
-### Registration validation error
-```js
-Status: 400 Bad Request
-Content-Type: application/json
-ResponseBody: {
-  "message": "Помилка від Joi або іншої бібліотеки валідації"
-}
-```
+Додай можливість поновлення аватарки, створивши ендпоінт /auth/avatars і використовуючи метод PATCH.
 
-### Registration conflict error
-```js
-Status: 409 Conflict
-Content-Type: application/json
-ResponseBody: {
-  "message": "Email in use"
-}
-```
+### Запит
+````
+PATCH /auth/avatars
+Content-Type: multipart/form-data
+Authorization: "Bearer {{token}}"
+RequestBody: завантажений файл
+````
 
-### Registration success response
-```js
-Status: 201 Created
-Content-Type: application/json
-ResponseBody: {
-  "user": {
-    "email": "example@example.com",
-    "subscription": "starter"
-  }
-}
-```
-
-### Логін
-
-1. Створити ендпоінт /api/auth/login
-2. В моделі User знайти користувача за email.
-3. Зробити валідацію всіх обов'язкових полів (email і password). При помилці валідації повернути Помилку валідації.
-
-В іншому випадку, порівняти пароль для знайденого користувача, якщо паролі збігаються створити токен, зберегти в поточному юзера і повернути Успішна відповідь.
-Якщо пароль або імейл невірний, повернути Помилку Unauthorized.
-
-### Login request
-```js
-POST /api/auth/login
-Content-Type: application/json
-RequestBody: {
-  "email": "example@example.com",
-  "password": "examplepassword"
-}
-```
-### Login validation error
-```js
-Status: 400 Bad Request
-Content-Type: application/json
-ResponseBody: {
-  "message": "Помилка від Joi або іншої бібліотеки валідації"
-}
-```
-### Login success response
-```js
+### Успішна відповідь
+````
 Status: 200 OK
 Content-Type: application/json
 ResponseBody: {
-  "token": "exampletoken",
-  "user": {
-    "email": "example@example.com",
-    "subscription": "starter"
-  }
+"avatarURL": "тут буде посилання на зображення"
 }
+````
+
+### Неуспішна відповідь
 ```
-### Login auth error
-```js
-Status: 401 Unauthorized
-ResponseBody: {
-  "message": "Email or password is wrong"
-}
-```
-
-## Крок 3
-
-### Перевірка токена
-
-Створити мідлвар для перевірки токена і додай його до всіх раутів, які повинні бути захищені.
-- Мідлвар бере токен з заголовків Authorization, перевіряє токен на валідність.
-- У випадку помилки повернути Помилку Unauthorized.
-- Якщо валідація пройшла успішно, отримати з токена id користувача. Знайти користувача в базі даних з цим id.
-- Якщо користувач існує і токен збігається з тим, що знаходиться в базі, записати його дані в req.user і викликати next().
-- Якщо користувача з таким id НЕ існує або токени не збігаються, повернути Помилку Unauthorized
-
-
-### Middleware unauthorized error
-```js
 Status: 401 Unauthorized
 Content-Type: application/json
 ResponseBody: {
-  "message": "Not authorized"
+"message": "Not authorized"
 }
 ```
 
-## Крок 4
+Створи папку temp в корені проекту і зберігай в неї завантажену аватарку.
+Перенеси аватарку користувача з папки temp в папку public/avatars і дай їй унікальне ім'я для конкретного користувача.
+Отриманий URL /avatars/<ім'я файлу з розширенням> та збережи в поле avatarURL користувача
 
-### Логаут
-
-1. Створити ендпоінт /api/auth/logout
-2. Додати в маршрут мідлвар перевірки токена.
-
-У моделі User знайти користувача за id.
-Якщо користувача не існує, повернути Помилку Unauthorized.
-В іншому випадку, видалити токен у поточного юзера і повернути Успішна відповідь.
-
-### Logout request
-```js
-POST /api/auth/logout
-Authorization: "Bearer {{token}}"
-```
-
-### Logout unauthorized error
-```js
-Status: 401 Unauthorized
-Content-Type: application/json
-ResponseBody: {
-  "message": "Not authorized"
-}
-```
-
-### Logout success response
-```js
-Status: 204 No Content
-```
-
-## Крок 5
-
-Поточний користувач - отримати дані юзера по токені
-
-1. Створити ендпоінт /api/auth/current
-2. Додати в раут мідлвар перевірки токена.
-
-Якщо користувача не існує, повернути Помилку Unauthorized
-В іншому випадку повернути Успішну відповідь
-
-### Current user request
-```js
-GET /api/auth/current
-Authorization: "Bearer {{token}}"
-```
-
-### Current user unauthorized error
-```js
-Status: 401 Unauthorized
-Content-Type: application/json
-ResponseBody: {
-  "message": "Not authorized"
-}
-```
-
-### Current user success response
-```js
-Status: 401 Unauthorized
-Content-Type: application/json
-ResponseBody: {
-  "message": "Not authorized"
-}
-```
 ## Результати виконання роботи
-### Login
-![Contacts API](assets/login.png)
-### Get contact
-![Contacts API](assets/get_contact.png)
-### Get all contacts
-![Contacts API](assets/get_all_contacts.png)
-### Create contact
-![Contacts API](./assets/create_contact.png)
-### Update contact
-![Contacts API](./assets/update_contact.png)
-### Update status
-![Contacts API](./assets/update_status.png)
-### Delete contact
-![Contacts API](./assets/delete_contact.png)
-### Logout
-![Contacts API](./assets/logout.png)
+![Contacts API](assets/avatar.png)
