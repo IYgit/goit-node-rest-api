@@ -1,6 +1,6 @@
+
 import sequelize from '../db/sequelize.js';
 import { DataTypes } from 'sequelize';
-
 
 const User = sequelize.define('User', {
   password: {
@@ -24,12 +24,19 @@ const User = sequelize.define('User', {
   avatarURL: {
     type: DataTypes.STRING,
     allowNull: true,
+  },
+  verify: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+  },
+  verificationToken: {
+    type: DataTypes.STRING,
+    defaultValue: null,
   }
 }, {
   tableName: 'users',
-  timestamps: false, // ✅ Вимикає createdAt та updatedAt
+  timestamps: false,
 });
-
 
 User.associate = function(models) {
   User.hasMany(models.Contact, {
@@ -39,6 +46,5 @@ User.associate = function(models) {
 };
 
 // await sequelize.sync({ alter: true });
-
 
 export default User;

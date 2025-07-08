@@ -10,6 +10,9 @@ const authRouter = express.Router();
 // User registration
 authRouter.post('/register', validateBody(registerSchema), authController.register);
 
+// Email verification
+authRouter.get('/verify/:verificationToken', authController.verifyEmail);
+
 // User login
 authRouter.post('/login', validateBody(loginSchema), authController.login);
 
