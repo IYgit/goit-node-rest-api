@@ -9,7 +9,6 @@ import {fileURLToPath} from "url";
 import { v4 as uuidv4 } from 'uuid';
 import { sendEmail } from '../services/emailService.js';
 
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -232,6 +231,49 @@ export const verifyEmail = async (req, res, next) => {
 
     res.json({
       message: 'Verification successful'
+    });
+
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const resendVerificationEmail = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+
+    // Знаходимо користувача за email
+    const user = await User.findOne({ where: { email } });
+
+    // Якщо користувача не знайдено
+    if (!user) {
+      throw HttpError(404, 'User not found');
+    }
+
+    // Перевіряємо чи користувач вже верифікований
+    if (user.verify) {
+      throw HttpError(400, 'Verification has already been passed');
+    }
+
+    // Якщо токен верифікації відсутній, генеруємо новий
+    if (!user.verificationToken) {
+      user.verificationToken = uuidv4();
+      await user.save();
+    }
+
+    // Формуємо посилання для верифікації
+    const verificationLink = `http://localhost:${process.env.PORT || 3000}/api/auth/verify/${user.verificationToken}`;
+
+    // Відправляємо email
+    await sendEmail({
+      to: email,
+      subject: 'Підтвердження email',
+      html: `<p>Для підтвердження вашої електронної адреси перейдіть за посиланням: 
+             <a href="${verificationLink}">${verificationLink}</a></p>`,
+    });
+
+    res.json({
+      message: 'Verification email sent',
     });
 
   } catch (error) {
