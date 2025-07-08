@@ -1,66 +1,140 @@
-## Робота з файлами та тестування додатків
- Додай можливість завантаження аватарки користувача через [Multer].
+## Верифікація Email
+
+Після реєстрації, користувач повинен отримати лист на вказану при реєстрації пошту з посиланням для верифікації свого email
+Пройшовши посиланням в отриманому листі, в перший раз, користувач повинен отримати Відповідь зі статусом 200, що буде мати на увазі успішну верифікацію email
+Пройшовши по посиланню повторно користувач повинен отримати Помилку зі статусом 404
+
 
 ### Крок 1
 
-Створи папку public для роздачі статики. У цій папці зроби папку avatars.
-Налаштуй Express на роздачу статичних файлів з папки public.
-Поклади будь-яке зображення в папку public/avatars і перевір, що роздача статики працює.
-При переході по такому URL браузер відобразить зображення. Shell http://locahost:<порт>/avatars/<ім'я файлу з розширенням>
+Підготовка інтеграції з API ukr.net
+
+Прочитай детальну інструкцію за посиланням, натиснувши на кнопку нижче.
+
+Підготовка інтеграції з API
+
 
 ### Крок 2
 
-У схему користувача додай нову властивість avatarURL для зберігання зображення.
+Створення ендпоінта для верифікації email
+
+1. Додати в модель User два поля verificationToken і verify. Значення поля verify рівне false означатиме, що його email ще не пройшов верифікацію
 ```
 {
-...
-avatarURL: DataTypes.STRING,
-...
+verify: {
+type: DataType.BOOLEAN,
+defaultValue: false,
+},
+verificationToken: {
+type: DataType.STRING,
+},
 }
 ```
 
-Використовуй пакет gravatar для того, щоб при реєстрації нового користувача відразу згенерувати йому аватар по його email.
+2. Створити ендпоінт GET /auth/verify/:verificationToken(# verification-request), де по параметру verificationToken ми будемо шукати користувача в моделі User
+
+Якщо користувач з таким токеном не знайдений, необхідно повернути Помилку 'Not Found'
+Якщо користувач знайдений, встановлюємо verificationToken в null, а поле verify ставимо рівним true в документі користувача і повертаємо Успішну відповідь
+
+
+Verification request
+```
+GET /auth/verify/:verificationToken
+```
+
+
+
+Verification user Not Found
+```
+Status: 404 Not Found
+ResponseBody: {
+message: 'User not found'
+}
+```
+
+
+
+Verification success response
+```
+Status: 200 OK
+ResponseBody: {
+message: 'Verification successful',
+}
+```
+
+
 
 ### Крок 3
 
-При реєстрації користувача:
+Додавання відправки email користувачу з посиланням для верифікації
 
-Створюй посилання на аватарку користувача за допомогою gravatar
-Отриманий URL збережи в поле avatarURL під час створення користувача
+При створення користувача при реєстрації:
+
+Створити verificationToken для користувача і записати його в БД (для генерації токена використовуйте пакет uuid або nanoid)
+Відправити email на пошту користувача і вказати посилання для верифікації email'а ( /auth/verify/:verificationToken) в повідомленні
+Так само необхідно враховувати, що тепер логін користувача не дозволено, якщо не верифікувано email
+
+
 
 ### Крок 4
 
-Додай можливість поновлення аватарки, створивши ендпоінт /auth/avatars і використовуючи метод PATCH.
+Додавання повторної відправки email користувачу з посиланням для верифікації
 
-### Запит
-````
-PATCH /auth/avatars
-Content-Type: multipart/form-data
-Authorization: "Bearer {{token}}"
-RequestBody: завантажений файл
-````
+Необхідно передбачити, варіант, що користувач може випадково видалити лист. Воно може не дійти з якоїсь причини до адресата. Наш сервіс відправки листів під час реєстрації видав помилку і т.д.
 
-### Успішна відповідь
-````
-Status: 200 OK
-Content-Type: application/json
-ResponseBody: {
-"avatarURL": "тут буде посилання на зображення"
-}
-````
 
-### Неуспішна відповідь
 ```
-Status: 401 Unauthorized
+POST /auth/verify
+```
+Отримує body в форматі {email}
+Якщо в body немає обов'язкового поля email, повертає json з ключем {"message":"missing required field email"} і статусом 400
+Якщо з body все добре, виконуємо повторну відправку листа з verificationToken на вказаний email, але тільки якщо користувач не верифікований
+Якщо користувач вже пройшов верифікацію відправити json з ключем {"message":"Verification has already been passed"} зі статусом 400 Bad Request
+
+
+Resending an email request
+```
+POST /auth/verify
 Content-Type: application/json
-ResponseBody: {
-"message": "Not authorized"
+RequestBody: {
+"email": "example@example.com"
 }
 ```
 
-Створи папку temp в корені проекту і зберігай в неї завантажену аватарку.
-Перенеси аватарку користувача з папки temp в папку public/avatars і дай їй унікальне ім'я для конкретного користувача.
-Отриманий URL /avatars/<ім'я файлу з розширенням> та збережи в поле avatarURL користувача
+Resending an email validation error
+```
+Status: 400 Bad Request
+Content-Type: application/json
+ResponseBody:  {
+"message": "Помилка від Joi або іншої бібліотеки валідації"
+}
+```
+
+
+Resending an email success response
+```
+Status: 200 Ok
+Content-Type: application/json
+ResponseBody: {
+"message": "Verification email sent"
+}
+```
+
+
+
+Resend email for verified user
+```
+Status: 400 Bad Request
+Content-Type: application/json
+ResponseBody: {
+message: "Verification has already been passed"
+}
+```
+
 
 ## Результати виконання роботи
-![Contacts API](assets/avatar.png)
+### URL верифікації
+![Contacts API](assets/confirm_url.png)
+
+### Успішна верифікація
+![Contacts API](assets/confirmation_success.png)
