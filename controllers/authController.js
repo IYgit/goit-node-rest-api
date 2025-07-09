@@ -6,7 +6,8 @@ import jwt from 'jsonwebtoken';
 import fs from 'fs/promises';
 import path from 'path';
 import {fileURLToPath} from "url";
-
+import { v4 as uuidv4 } from 'uuid';
+import { sendEmail } from '../services/emailService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -23,10 +24,13 @@ export const register = async (req, res, next) => {
 
     // Генеруємо URL аватара
     const avatarURL = gravatar.url(email, {
-      s: '250', // Розмір
-      r: 'g',   // Рейтинг
-      d: 'mp'   // Стандартне зображення
-    }, true);   // https
+      s: '250',
+      r: 'g',
+      d: 'mp'
+    }, true);
+
+    // Генеруємо токен верифікації
+    const verificationToken = uuidv4();
 
     // Хешуємо пароль
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -36,7 +40,19 @@ export const register = async (req, res, next) => {
       email,
       password: hashedPassword,
       avatarURL,
-      // subscription defaults to 'starter' as per model definition
+      verificationToken,
+      verify: false,
+    });
+
+    // Формуємо посилання для верифікації
+    const verificationLink = `http://localhost:${process.env.PORT || 3000}/api/auth/verify/${verificationToken}`;
+
+    // Відправляємо email
+    await sendEmail({
+      to: email,
+      subject: 'Підтвердження email',
+      html: `<p>Для підтвердження вашої електронної адреси перейдіть за посиланням: 
+             <a href="${verificationLink}">${verificationLink}</a></p>`,
     });
 
     res.status(201).json({
@@ -47,7 +63,6 @@ export const register = async (req, res, next) => {
       },
     });
   } catch (error) {
-    // If it's not an HttpError, it might be a Sequelize validation error or other unexpected error
     if (!error.status) {
       console.error("Registration Error:", error);
       if (error.name === 'SequelizeUniqueConstraintError') {
@@ -94,7 +109,12 @@ export const login = async (req, res, next) => {
     // Find user by email
     const user = await User.findOne({ where: { email } });
     if (!user) {
-      throw HttpError(401, 'Email or password invalid'); // Generic message for security
+      throw HttpError(401, 'Email or password invalid');
+    }
+
+    // Перевіряємо чи верифікований email
+    if (!user.verify) {
+      throw HttpError(401, 'Email not verified');
     }
 
     // Compare password
@@ -178,6 +198,86 @@ export const updateAvatar = async (req, res, next) => {
       await fs.unlink(req.file.path).catch(console.error);
     }
     next(error); // передаємо помилку глобальному error‑handler’у
+  }
+};
+
+
+export const verifyEmail = async (req, res, next) => {
+  try {
+    const { verificationToken } = req.params;
+
+    // Шукаємо користувача за токеном верифікації
+    const user = await User.findOne({
+      where: {
+        verificationToken
+      }
+    });
+
+    // Якщо користувача не знайдено
+    if (!user) {
+      throw HttpError(404, 'User not found');
+    }
+
+    // Оновлюємо дані користувача
+    await User.update(
+        {
+          verify: true,
+          verificationToken: null
+        },
+        {
+          where: { id: user.id }
+        }
+    );
+
+    res.json({
+      message: 'Verification successful'
+    });
+
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const resendVerificationEmail = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+
+    // Знаходимо користувача за email
+    const user = await User.findOne({ where: { email } });
+
+    // Якщо користувача не знайдено
+    if (!user) {
+      throw HttpError(404, 'User not found');
+    }
+
+    // Перевіряємо чи користувач вже верифікований
+    if (user.verify) {
+      throw HttpError(400, 'Verification has already been passed');
+    }
+
+    // Якщо токен верифікації відсутній, генеруємо новий
+    if (!user.verificationToken) {
+      user.verificationToken = uuidv4();
+      await user.save();
+    }
+
+    // Формуємо посилання для верифікації
+    const verificationLink = `http://localhost:${process.env.PORT || 3000}/api/auth/verify/${user.verificationToken}`;
+
+    // Відправляємо email
+    await sendEmail({
+      to: email,
+      subject: 'Підтвердження email',
+      html: `<p>Для підтвердження вашої електронної адреси перейдіть за посиланням: 
+             <a href="${verificationLink}">${verificationLink}</a></p>`,
+    });
+
+    res.json({
+      message: 'Verification email sent',
+    });
+
+  } catch (error) {
+    next(error);
   }
 };
 

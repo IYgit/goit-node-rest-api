@@ -1,7 +1,7 @@
 import express from 'express';
 import * as authController from '../controllers/authController.js';
 import validateBody from '../helpers/validateBody.js';
-import { registerSchema, loginSchema } from '../schemas/authSchemas.js';
+import {registerSchema, loginSchema, emailSchema} from '../schemas/authSchemas.js';
 import authenticate from '../middleware/authenticate.js';
 import upload from '../middleware/upload.js';
 
@@ -9,6 +9,11 @@ const authRouter = express.Router();
 
 // User registration
 authRouter.post('/register', validateBody(registerSchema), authController.register);
+
+// Email verification
+authRouter.get('/verify/:verificationToken', authController.verifyEmail);
+
+authRouter.post('/verify', validateBody(emailSchema), authController.resendVerificationEmail);
 
 // User login
 authRouter.post('/login', validateBody(loginSchema), authController.login);
